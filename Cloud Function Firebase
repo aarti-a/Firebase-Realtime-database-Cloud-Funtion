@@ -1,0 +1,35 @@
+
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const serviceAccount = require("Your project SDK.json");                           // Add your project json key location here  
+const json2csv = require("json2csv").parse;
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "your Project URL",                                                // Add your project URL here 
+});
+exports.jsonCsvConversion = functions.https.onRequest(async function(req, res) {
+  const db = admin.database();
+  const ref = db.ref("Your Database Name");
+  const list = await ref.once("value").then((snapshot) => {
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      console.log("No data available");
+    }
+  }).catch((error) => {
+    console.error(error);
+  });
+  // res.json({result: list}); //(f you just want JSON on the console.
+
+//convert Json to CSV
+  const csv = json2csv(list);
+  res.setHeader(
+      "Content-disposition",
+      "attachment; filename=report.csv",
+  );
+  console.log("Setting response data");
+  res.set("Content-Type", "text/csv");
+  res.send(csv);
+});
+
